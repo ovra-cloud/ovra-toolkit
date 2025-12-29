@@ -62,52 +62,38 @@ func StructToMap[T any](input T, includeFields []string, excludeFields []string)
 func StructToMapOmit[T any](input T, includeFields []string, excludeFields []string, omitEmpty bool) map[string]interface{} {
 	includeSet := make(map[string]struct{})
 	excludeSet := make(map[string]struct{})
-
 	for _, f := range includeFields {
 		includeSet[f] = struct{}{}
 	}
 	for _, f := range excludeFields {
 		excludeSet[f] = struct{}{}
 	}
-
 	result := make(map[string]interface{})
 	val := reflect.ValueOf(input)
 	typ := reflect.TypeOf(input)
-
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 		typ = typ.Elem()
 	}
-
 	for i := 0; i < val.NumField(); i++ {
 		field := typ.Field(i)
-		if field.PkgPath != "" { // 跳过未导出字段
+		if field.PkgPath != "" {
 			continue
 		}
-
 		fieldName := field.Name
-
-		// 黑名单优先
-		if _, skip := excludeSet[fieldName]; skip {
+		if _, ok := excludeSet[fieldName]; ok {
 			continue
 		}
-		// 如果设置了白名单，只保留白名单字段
-		if len(includeSet) > 0 {
-			if _, keep := includeSet[fieldName]; !keep {
-				continue
-			}
-		}
-
 		value := val.Field(i)
-
-		// 如果启用了 omitEmpty，跳过零值字段
+		if _, ok := includeSet[fieldName]; ok {
+			result[fieldName] = value.Interface()
+			continue
+		}
 		if omitEmpty && isEmptyValue(value) {
 			continue
 		}
-
 		result[fieldName] = value.Interface()
 	}
-
 	return result
 }
 
