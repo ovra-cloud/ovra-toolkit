@@ -43,8 +43,12 @@ func (ap *AuditPlugin) Initialize(db *gorm.DB) error {
 				return
 			}
 			now := time.Now()
-			db.Statement.SetColumn("UpdateBy", userID)
-			db.Statement.SetColumn("UpdateTime", now)
+			if db.Statement.Schema.LookUpField("UpdateBy") != nil {
+				db.Statement.SetColumn("UpdateBy", userID)
+			}
+			if db.Statement.Schema.LookUpField("UpdateTime") != nil {
+				db.Statement.SetColumn("UpdateTime", now)
+			}
 		}); err != nil {
 		return err
 	}
